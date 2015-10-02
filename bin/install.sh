@@ -293,6 +293,9 @@ EOT
   SOLR_BASE_DIR="$(pwd)"
   SOLR_CORE_DIR="$(pwd)/opus4"
 
+  # Create and configure Solr core
+  # ------------------------------
+
   # create space for configuring solr service
   mkdir -p "${SOLR_CORE_DIR}/data/solr/conf"
 
@@ -342,8 +345,26 @@ EOT
     *)
       SOLR_CONTEXT="/solr"
   esac
+fi
 
 
+[[ -z $SOLR_SERVER_HOST ]] && read -p "Solr server host [localhost]: "     SOLR_SERVER_HOST
+[[ -z $SOLR_SERVER_PORT ]] && read -p "Solr server port [8983]: "          SOLR_SERVER_PORT
+[[ -z $SOLR_SERVER_PATH ]] && read -p "Solr server path [/solr]: "         SOLR_SERVER_PATH
+
+[[ -z $SOLR_EXTRACTION ]] && read -p "Use separate Solr server for extraction? [N]: " SOLR_EXTRACTION
+
+[[ -z $SOLR_SERVER_EXT_HOST ]] && read -p "Solr extraction server host [localhost]: "   SOLR_SERVER_EXT_HOST
+[[ -z $SOLR_SERVER_EXT_PORT ]] && read -p "Solr extraction server port [8983]: "   SOLR_SERVER_EXT_PORT
+[[ -z $SOLR_SERVER_EXT_PATH ]] && read -p "Solr extraction server path [/solr/extraction]: "   SOLR_SERVER_EXT_PATH
+
+
+
+
+# TODO allow configuration without installation
+[ -z "$INSTALL_SOLR" ] && read -p "Install and configure Solr server? [Y]: " INSTALL_SOLR
+if [ -z "$INSTALL_SOLR" ] || [ "$INSTALL_SOLR" = Y ] || [ "$INSTALL_SOLR" = y ]
+then
 
   # write solr-config to application's config.ini
   CONFIG_INI="$BASEDIR/opus4/application/configs/config.ini"
@@ -376,7 +397,7 @@ EOT
   fi
 fi
 
-# import test documents
+# Import test documents
 # ---------------------
 
 [ -z "$IMPORT_TESTDATA" ] && read -p "Import test data? [Y]: " IMPORT_TESTDATA
