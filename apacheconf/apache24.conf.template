@@ -1,0 +1,11 @@
+AllowEncodedSlashes On
+
+Alias /OPUS_URL_BASE "/BASEDIR/public"
+
+<Directory "/BASEDIR/public">
+  Options FollowSymLinks
+  AllowOverride All
+  Require local
+  RewriteEngine on
+  LogLevel rewrite:info
+</Directory>

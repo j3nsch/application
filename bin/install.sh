@@ -81,7 +81,6 @@ cd "$BASEDIR"
 # Link to MathJax for rendering mathematical formulars (optional)
 # ---------------------------------------------------------------
 # TODO only download mathjax if required?
-# TODO activate MathJax in configuration
 
 [ -z "$INSTALL_MATHJAX" ] && read -p "Install MathJax? [Y]: " INSTALL_MATHJAX
 if [ -z "$INSTALL_MATHJAX" ] || [ "$INSTALL_MATHJAX" = Y ] || [ "$INSTALL_MATHJAX" = y ]
@@ -89,9 +88,10 @@ then
   cd "$BASEDIR/public/js"
   ln -svnf "$BASEDIR/vendor/mathjax/mathjax" "MathJax"
   cd "$BASEDIR"
+
+# TODO activate MathJax in configuration
 fi
 
-exit 0;
 # Create .htaccess file
 # ---------------------
 
@@ -113,14 +113,12 @@ fi
 # Prepare apache configuration
 # ----------------------------
 
-sed -e "s!/OPUS_URL_BASE!/$OPUS_URL_BASE!g; s!/BASEDIR/!/$BASEDIR/!; s!//*!/!g" "$BASEDIR/apacheconf/apache.conf.template" > "$BASEDIR/apacheconf/apache.conf"
+sed -e "s!/OPUS_URL_BASE!/$OPUS_URL_BASE!g; s!/BASEDIR/!/$BASEDIR/!; s!//*!/!g" "$BASEDIR/apacheconf/apache24.conf.template" > "$BASEDIR/apacheconf/apache.conf"
 
 # TODO handle case file exists
 cd $APACHE_SITES
-ln -sv "$BASEDIR/apacheconf/apache.conf" "$OPUS_NAME.conf"
+ln -svnf "$BASEDIR/apacheconf/apache.conf" "$OPUS_NAME.conf"
 cd $BASEDIR
-
-exit 0;
 
 # Create OPUS user account
 # ------------------------
@@ -169,9 +167,9 @@ OWNER="$OPUS_USER_NAME:$OPUS_GROUP_NAME"
 # ---------------
 
 # prompt for database parameters
-[[ -z $DBNAME               ]] && read -p "New OPUS Database Name [opus400]: "          DBNAME
-[[ -z $ADMIN                ]] && read -p "New OPUS Database Admin Name [opus4admin]: " ADMIN
-[[ -z $ADMIN_PASSWORD       ]] && read -p "New OPUS Database Admin Password: " -s       ADMIN_PASSWORD
+[[ -z $DBNAME               ]] && read -p "New OPUS Database Name [$OPUS_NAME_ESC]: "    DBNAME
+[[ -z $ADMIN                ]] && read -p "New OPUS Database Admin Name [opus4admin]: "  ADMIN
+[[ -z $ADMIN_PASSWORD       ]] && read -p "New OPUS Database Admin Password: " -s        ADMIN_PASSWORD
 echo
 [[ -z $WEBAPP_USER          ]] && read -p "New OPUS Database User Name [opus4]: "       WEBAPP_USER
 [[ -z $WEBAPP_USER_PASSWORD ]] && read -p "New OPUS Database User Password: " -s        WEBAPP_USER_PASSWORD
@@ -184,7 +182,7 @@ read -p "MySQL Root User Password: " -s MYSQLROOT_PASSWORD
 echo
 
 # set defaults if value is not given
-DBNAME="${DBNAME:-opus400}"
+DBNAME="${DBNAME:-$OPUS_NAME_ESC}"
 ADMIN="${ADMIN:-opus4admin}"
 WEBAPP_USER="${WEBAPP_USER:-opus4}"
 MYSQLROOT="${MYSQLROOT:-root}"
@@ -375,29 +373,42 @@ EOT
   esac
 fi
 
+# Get Solr connection parameters (obtained automatically if Solr was installed by script)
 
 [[ -z $SOLR_SERVER_HOST ]] && read -p "Solr server host [localhost]: "     SOLR_SERVER_HOST
 [[ -z $SOLR_SERVER_PORT ]] && read -p "Solr server port [8983]: "          SOLR_SERVER_PORT
 [[ -z $SOLR_SERVER_PATH ]] && read -p "Solr server path [/solr]: "         SOLR_SERVER_PATH
 
-[[ -z $SOLR_EXTRACTION ]] && read -p "Use separate Solr server for extraction? [N]: " SOLR_EXTRACTION
+# set defaults if value is not given
+SOLR_SERVER_HOST="${SOLR_SERVER_HOST:-localhost}"
+SOLR_SERVER_PORT="${SOLR_SERVER_PORT:-8983}"
+SOLR_SERVER_PATH="${SOLR_SERVER_PATH:-/solr}"
 
-[[ -z $SOLR_SERVER_EXT_HOST ]] && read -p "Solr extraction server host [localhost]: "   SOLR_SERVER_EXT_HOST
-[[ -z $SOLR_SERVER_EXT_PORT ]] && read -p "Solr extraction server port [8983]: "   SOLR_SERVER_EXT_PORT
-[[ -z $SOLR_SERVER_EXT_PATH ]] && read -p "Solr extraction server path [/solr/extraction]: "   SOLR_SERVER_EXT_PATH
+# Get Solr connection parameters for fulltext extraction
 
+[[ -z $SOLR_EXTRACTION ]] && read -p "Use separate Solr configuration for extraction? [N]: " SOLR_EXTRACTION
+if [ "$SOLR_EXTRACTION" = Y ] || [ "$SOLR_EXTRACTION" = y ]
+then
+  [[ -z $SOLR_SERVER_EXT_HOST ]] && read -p "Solr extraction server host [localhost]: "   SOLR_SERVER_EXT_HOST
+  [[ -z $SOLR_SERVER_EXT_PORT ]] && read -p "Solr extraction server port [8983]: "   SOLR_SERVER_EXT_PORT
+  [[ -z $SOLR_SERVER_EXT_PATH ]] && read -p "Solr extraction server path [/solr/extraction]: "   SOLR_SERVER_EXT_PATH
 
+  SOLR_SERVER_EXT_HOST="${SOLR_SERVER_EXT_HOST:-localhost}"
+  SOLR_SERVER_EXT_PORT="${SOLR_SERVER_EXT_PORT:-8983}"
+  SOLR_SERVER_EXT_PATH="${SOLR_SERVER_EXT_PATH:-/solr/extraction}"
+else
+  # Use same connection for extraction and indexing
+  SOLR_SERVER_EXT_HOST="$SOLR_SERVER_HOST"
+  SOLR_SERVER_EXT_PORT="$SOLR_SERVER_PORT"
+  SOLR_SERVER_EXT_PATH="$SOLR_SERVER_PATH"
+fi
 
+# write solr-config to application's config.ini
+CONFIG_INI="$BASEDIR/application/configs/config.ini"
+"$SCRIPT_PATH/install-config-solr.sh" "$CONFIG_INI" "$SOLR_SERVER_HOST" "$SOLR_SERVER_PORT" "${SOLR_SERVER_PATH}" "$SOLR_SERVER_EXT_HOST" "$SOLR_SERVER_EXT_PORT" "${SOLR_SERVER_EXT_PATH}"
 
-# TODO allow configuration without installation
-[ -z "$INSTALL_SOLR" ] && read -p "Install and configure Solr server? [Y]: " INSTALL_SOLR
 if [ -z "$INSTALL_SOLR" ] || [ "$INSTALL_SOLR" = Y ] || [ "$INSTALL_SOLR" = y ]
 then
-
-  # write solr-config to application's config.ini
-  CONFIG_INI="$BASEDIR/opus4/application/configs/config.ini"
-  "$SCRIPT_PATH/install-config-solr.sh" "$CONFIG_INI" localhost "$SOLR_SERVER_PORT" "${SOLR_CONTEXT}" localhost "$SOLR_SERVER_PORT" "${SOLR_CONTEXT}"
-
   # change file owner of solr installation
   chown -R "$OWNER" "$BASEDIR/$SOLR_DIR"
   chown -R "$OWNER" "$BASEDIR/solrconfig"
@@ -495,8 +506,8 @@ chown -R "$OWNER" "$BASEDIR"
 
 # set permission in workspace directory appropriately
 cd "$(readlink "$BASEDIR/workspace")"
-find ../workspace -type d -print0 | xargs -0 -- chmod 777
-find ../workspace -type f -print0 | xargs -0 -- chmod 666
+find workspace -type d -print0 | xargs -0 -- chmod 777
+find workspace -type f -print0 | xargs -0 -- chmod 666
 
 # Cleanup downloads
 # -----------------
