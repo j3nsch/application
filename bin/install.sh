@@ -313,6 +313,11 @@ EOT
   # extract archive into basedir (expecting to create folder named solr-x.y.z)
   echo "extracting Solr archive ..."
   tar xfz "downloads/$SOLR_ARCHIVE_NAME"
+fi
+
+[ -z "$CREATE_SOLR_CORE" ] && read -p "Create Solr core? [Y]:"   CREATE_SOLR_CORE
+if [ "$CREATE_SOLR_CORE" = Y ] || [ "$CREATE_SOLR_CORE" = y ]
+then
 
   cd "$SOLR_DIR"
 
