@@ -7,7 +7,8 @@
     "jpgraph/jpgraph": "dev-master",
     "solarium/solarium": "3.4.1",
     "opus4-repo/framework": "dev-master",
-    "components/jquery": "1.9.*"
+    "components/jquery": "1.9.*",
+    "mathjax/mathjax": "2.5.3"
   },
   "require-dev": {
     "phpunit/phpunit": "4.8.5",

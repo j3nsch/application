@@ -12,7 +12,8 @@
 # GNU General Public License for more details.
 #
 # @author      Sascha Szott <szott@zib.de>
-# @copyright   Copyright (c) 2010-2011, OPUS 4 development team
+# @author      Jens Schwidder <schwidder@zib.de>
+# @copyright   Copyright (c) 2010-2015, OPUS 4 development team
 # @license     http://www.gnu.org/licenses/gpl.html General Public License
 # @version     $Id$
 
@@ -24,6 +25,7 @@ SOLR_SERVER_URL='http://archive.apache.org/dist/lucene/solr/5.2.1/solr-5.2.1.tgz
 
 MYSQL_CLIENT='/usr/bin/mysql'
 
+# TODO make flexible, how?
 APACHE_SITES='/etc/apache2/sites-available'
 
 # END OF USER-CONFIGURATION
@@ -33,7 +35,11 @@ SCRIPT_NAME_FULL="`readlink -f "$0"`"
 SCRIPT_PATH="`dirname "$SCRIPT_NAME_FULL"`"
 BASEDIR="`dirname "$SCRIPT_PATH"`"
 
+# Check and select distribution
+# -----------------------------
+
 # check input parameter
+# TODO move distribution specific code into separate files, so it is easier to support new systems
 if [ $# -lt 1 ]
 then
   echo "Missing Argument: use $SCRIPT_NAME {ubuntu,suse}"
@@ -64,6 +70,28 @@ cd "$BASEDIR/db"
 ln -svnf "$BASEDIR/vendor/opus4-repo/framework/db/schema" "schema"
 cd "$BASEDIR"
 
+# Link to JQuery
+# --------------
+# TODO install jquery to different folder?
+
+cd "$BASEDIR/public/js"
+ln -svnf "$BASEDIR/components/jquery/jquery.js" "jquery.js"
+cd "$BASEDIR"
+
+# Link to MathJax for rendering mathematical formulars (optional)
+# ---------------------------------------------------------------
+# TODO only download mathjax if required?
+# TODO activate MathJax in configuration
+
+[ -z "$INSTALL_MATHJAX" ] && read -p "Install MathJax? [Y]: " INSTALL_MATHJAX
+if [ -z "$INSTALL_MATHJAX" ] || [ "$INSTALL_MATHJAX" = Y ] || [ "$INSTALL_MATHJAX" = y ]
+then
+  cd "$BASEDIR/public/js"
+  ln -svnf "$BASEDIR/vendor/mathjax/mathjax" "MathJax"
+  cd "$BASEDIR"
+fi
+
+exit 0;
 # Create .htaccess file
 # ---------------------
 
